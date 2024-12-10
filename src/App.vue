@@ -83,60 +83,64 @@ const onRotate = ({ transform }) => {
 const targetOriginalDimension = ref({ width: 0, height: 0 });
 const containerOriginalDimension = ref({ width: 0, height: 0 });
 const targetOrginalTransform = ref("");
+const previousContainerWidth = ref(0);
+
 onMounted(() => {
   targetOriginalDimension.value = target.value.getBoundingClientRect();
   containerOriginalDimension.value = document.getElementById("container").getBoundingClientRect();
   //create a copy instead of reference
-  targetOrginalTransform.value = {style: Object.assign({}, target.value.style)};
+  targetOrginalTransform.value = target.value.style.transform;
+  previousContainerWidth.value = containerOriginalDimension.value.width;
 
   let isInit = true;
 
   const resizeObserver = new ResizeObserver((entries) => {
-    const { width, height } = entries[0].contentRect;
+    const { width } = entries[0].contentRect;
     if(isInit){
       isInit = false;
       return;
     }
+    // Calculate ratio based on previous width instead of original width
 
-    //get current translate values from target
-    const match = target.value.style.transform.match(/(translate\(([^)]+)\))/);
-    const values = match[2].split(",");
-    const currentTransX = parseFloat(values[0]);
-    const currentTransY = parseFloat(values[1]);
-    console.log("currentTransX", currentTransX);
-
-
-    //get current scale values from target
-    const scale = targetOrginalTransform.value.style.transform.match(/scale\(([^)]+)\)/);
-    const scaleValues = scale[1].split(",");
-    //get current rotate values from target
-    const rotate = targetOrginalTransform.value.style.transform.match(/rotate\(([^)]+)\)/);
-    let rotateValues = rotate[1].split(",") || [0]; 
-
-    const newScaleX =  width / containerOriginalDimension.value.width;
-    const newScaleY = width /  containerOriginalDimension.value.height;
-
-    //translate depends on scale so we need to recalculate the translate values
-
-    const offsetX = (targetOriginalDimension.value.width * newScaleX) / 2;
-    const offsetY = (targetOriginalDimension.value.height * newScaleY) / 2;
-    const newTransX = currentTransX * newScaleX - offsetX;
-    const newTransY = currentTransY * newScaleY - offsetY;
+    // Get current transform values
+    const transform = document.getElementById("target").style.transform;
     
-    console.log("newTransX", newTransX);
-   
-    
+    // Get current translate values
+    const translateMatch = transform.match(/translate\(([^)]+)\)/);
+    const translateValues = translateMatch[1].split(",");
 
-    
+    const currentTransX = parseFloat(translateValues[0]);
+    const currentTransY = parseFloat(translateValues[1]);
 
+    // Get current scale values
+    const scaleMatch = transform.match(/scale\(([^)]+)\)/);
+    const currentScaleValues = scaleMatch[1].split(",");
+    const currentScaleX = parseFloat(currentScaleValues[0]);
+    const currentScaleY = parseFloat(currentScaleValues[1]);
 
-    document.getElementById("target").style.transform = `translate(${newTransX}px, ${newTransY}px) rotate(${rotateValues[0]}) scale(${newScaleX}, ${newScaleY})`;
-    //target.value.style.transform = `translate(${newTransX}px, ${newTransY}px) rotate(${rotateValues[0]}deg) scale(${newScaleX}, ${newScaleY})`;
+    // Get current rotate value
+    const rotateMatch = transform.match(/rotate\(([^)]+)\)/);
+    const rotateValue = rotateMatch ? rotateMatch[1] : "0deg";
 
-    //update moveable rect
+    // Calculate new scale based on container width change
+    const widthRatio = width / previousContainerWidth.value;
+
+  
+
+    const newScaleX = currentScaleX * widthRatio;
+    const newScaleY = currentScaleY * widthRatio;
+    const newTransX = currentTransX * widthRatio;
+    const newTransY = currentTransY * widthRatio;
+
+    // Apply the new transform
+    document.getElementById("target").style.transform = 
+      `translate(${newTransX}px, ${newTransY}px) rotate(${rotateValue}) scale(${newScaleX}, ${newScaleY})`;
+
+      previousContainerWidth.value = width;
+
+    // Update moveable rect
     moveable.value.updateRect();
-  });
-
+});
   resizeObserver.observe(document.getElementById("container"))
 
 
