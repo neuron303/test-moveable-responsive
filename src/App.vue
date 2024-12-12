@@ -38,6 +38,7 @@
   width: 50px;
   height: 50px;
   background-color: red;
+  transform-origin: top left;
 }
 
 .debug {
@@ -97,6 +98,8 @@ onMounted(() => {
   const resizeObserver = new ResizeObserver((entries) => {
     const { width } = entries[0].contentRect;
     if(isInit){
+      previousContainerWidth.value = width;
+      const widthRatio = width / previousContainerWidth.value;
       isInit = false;
       return;
     }
@@ -104,7 +107,11 @@ onMounted(() => {
 
     // Get current transform values
     const transform = document.getElementById("target").style.transform;
+
+    // TODO only parse when attribute changed
     
+
+
     // Get current translate values
     const translateMatch = transform.match(/translate\(([^)]+)\)/);
     const translateValues = translateMatch[1].split(",");
@@ -131,20 +138,17 @@ onMounted(() => {
     const newScaleY = currentScaleY * widthRatio;
     const newTransX = currentTransX * widthRatio;
     const newTransY = currentTransY * widthRatio;
-
+    
     // Apply the new transform
-    document.getElementById("target").style.transform = 
-      `translate(${newTransX}px, ${newTransY}px) rotate(${rotateValue}) scale(${newScaleX}, ${newScaleY})`;
+    const transString = `translate(${newTransX}px, ${newTransY}px) rotate(${rotateValue}) scale(${newScaleX}, ${newScaleY})`;
+    document.getElementById("target").style.transform = transString;
 
-      previousContainerWidth.value = width;
+    previousContainerWidth.value = width;
 
     // Update moveable rect
     moveable.value.updateRect();
 });
   resizeObserver.observe(document.getElementById("container"))
-
-
-
 })
 
 
